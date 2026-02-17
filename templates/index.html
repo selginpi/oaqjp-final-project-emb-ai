@@ -1,32 +1,162 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="./static/mywebscript.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection App</title>
     <style>
-        .center-heading {
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
             text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            min-height: 150px;
+        }
+        .result-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: white;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .dominant {
+            font-size: 18px;
+            color: #4CAF50;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="card-body">
-            <h1 class="center-heading">NLP - Emotion Detection</h1> 
-            <div style="padding: 25px 25px 25px 25px;">
-            <h2 class="mb-3">
-                <label class="form-label">Please enter the text to be analyzed</label>
-                <input type="textarea" class="form-control" id="textToAnalyze">
-            </h2>
-
-            <div style="padding: 25px 25px 25px 25px;">
-                <button onclick="RunSentimentAnalysis()" class="btn btn-secondary">Run Sentiment Analysis</button>
-            </div>
-            <div style="padding: 25px 25px 25px 25px;"></div>
-            <h2 class="mb-3">
-                <label class="form-label">Result of Emotion Detection</label>
-            </h2>
-
-            <div id="system_response" style="padding: 25px 25px 25px 25px;"></div>
+    <div class="container">
+        <h1>🧠 Emotion Detection Analyzer</h1>
+        
+        <div>
+            <label for="text_input" style="font-weight: bold; color: #555;">Enter your text for emotion analysis:</label>
+            <textarea id="text_input" rows="6" placeholder="Example: I am so happy today!"></textarea>
+        </div>
+        
+        <div>
+            <button onclick="analyzeEmotion()">🔍 Run Emotion Analysis</button>
+        </div>
+        
+        <div id="result">
+            <div class="result-title">Results will appear here...</div>
         </div>
     </div>
+
+    <script>
+    function analyzeEmotion() {
+        const text = document.getElementById('text_input').value;
+        
+        // Show loading state
+        document.getElementById('result').innerHTML = '<div class="result-title">Analyzing... ⏳</div>';
+        
+        if (!text.trim()) {
+            document.getElementById('result').innerHTML = 
+                '<div class="result-title error">❌ Please enter some text to analyze.</div>';
+            return;
+        }
+        
+        fetch('/emotionDetector', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({text: text})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.dominant_emotion) {
+                // Format numbers to 4 decimal places for better display
+                const anger = Number(data.anger).toFixed(4);
+                const disgust = Number(data.disgust).toFixed(4);
+                const fear = Number(data.fear).toFixed(4);
+                const joy = Number(data.joy).toFixed(4);
+                const sadness = Number(data.sadness).toFixed(4);
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="result-title">📊 Analysis Results:</div>
+                     <p><strong>Text analyzed:</strong> "${data.text}"</p>
+                     <p><strong>Emotion scores:</strong></p>
+                     <ul>
+                         <li><strong>Anger:</strong> ${anger}</li>
+                         <li><strong>Disgust:</strong> ${disgust}</li>
+                         <li><strong>Fear:</strong> ${fear}</li>
+                         <li><strong>Joy:</strong> ${joy}</li>
+                         <li><strong>Sadness:</strong> ${sadness}</li>
+                     </ul>
+                     <div class="dominant">✨ Dominant emotion: ${data.dominant_emotion}</div>`;
+            } else {
+                document.getElementById('result').innerHTML = 
+                    '<div class="result-title error">❌ Invalid input! Please try again.</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('result').innerHTML = 
+                '<div class="result-title error">❌ Error occurred. Please try again.</div>';
+        });
+    }
+    </script>
 </body>
+</html>
